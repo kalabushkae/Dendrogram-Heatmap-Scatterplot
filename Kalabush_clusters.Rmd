@@ -1,0 +1,71 @@
+---
+title: "Dendrogram, Heatmap, Scatterplot in R "
+author: "Ekaterina Kalabush"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup,message = F, warning = F}
+library(tinytex)
+setwd("C:/DA/hw3")
+knitr::opts_chunk$set(echo = T, message = F, warning = F, cache = T)
+library(ggplot2)
+library(knitr)
+library(ggrepel)
+library(dendroextras)
+library(dplyr)
+library(pheatmap)
+library(RColorBrewer)
+library(kableExtra)
+```
+
+## Import Data
+```{r, results='asis'}
+library(readxl)
+Data_Shrink_Debt <- read_excel("C:/DA/hw3/Data_Shrink_Debt.xlsx", 
+                               sheet = "debt")
+Data_Shrink_Debt<-Data_Shrink_Debt[-19, ]
+head(Data_Shrink_Debt[,-c(10,11)]) %>%
+  kbl() %>%
+  kable_paper(bootstrap_options = "striped", full_width = F)
+```
+
+## Visualization 
+```{r}
+ggplot(Data_Shrink_Debt, aes(Debt_to_GDP_Ratio_2003, Debt_to_GDP_Ratio_2007))+
+  geom_label_repel(label=Data_Shrink_Debt$Country)+
+  geom_point(color = 'red')+
+  theme_classic(base_size = 16)+
+  labs(x = "Debt-to-GDP Ratio 2003", 
+       y = "Debt-to-GDP Ratio 2007", 
+       title = "Debt-to-GDP Ratio 2003 vs 2007")
+  
+```
+
+## Dendrogram plot
+```{r}
+Data_clust<-Data_Shrink_Debt %>% 
+  select(Country, Debt_to_GDP_Ratio_2003,Debt_to_GDP_Ratio_2007)
+rownames(Data_clust) <- Data_clust$Country
+dt = dist(Data_clust, method = "euclidean") #Compute distance matrix
+clust = hclust(dt)
+par(mar = c(2,10,2,10), cex = 0.6) # set margins on 4 sides of the plot
+clst1=colour_clusters(hclust(dist(Data_clust), "ave"),3,groupLabels=as.roman) #5 clusters
+plot(clst1, main = "Dendrogram with 3 clusters", horiz = TRUE, fontsize_number = 20)
+```
+
+## Heatmap
+```{r}
+heatcolor = brewer.pal(8,"RdBu")
+rownames(Data_Shrink_Debt) <- Data_Shrink_Debt$Country
+colnames(Data_Shrink_Debt) <- c(2003,2004,2005,2006,2007,2008,2009,2010)
+gdp = as.matrix(scale(Data_Shrink_Debt[,2:8])) #Scale to get comparable units 
+rownames(gdp) <- Data_clust$Country
+#us_crime_bystate = as.matrix(USArrests)
+clst = hclust(dist(gdp))
+#Simple heatmap
+pheatmap(gdp, cluster_row= F, cluster_col = F, main ="Debt-to-GDP Ratio ", color = heatcolor)
+```
+
